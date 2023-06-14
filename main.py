@@ -15,8 +15,7 @@ from rich import print
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 import datasets
-import huggingface_hub
-
+import streamlit as st
 # Create a list to store the text files
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -216,9 +215,8 @@ def chunks_to_embeddings():
         df['embeddings'] = list(tqdm(executor.map(generate_embeddings, df['chunk']), total=len(df)))
     df.to_csv('embeddings.csv')
 
-
 def answer_question(question):
-    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings")
+    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings", use_auth_token=st.secrets["HF_TOKEN"])
     df = ds['train'].to_pandas()
     df['embeddings'] = df['embeddings'].apply(eval).apply(np.array)
     ans = _answer_question(df, question=question)
@@ -243,4 +241,4 @@ def upload_to_hf():
     dataset.push_to_hub('autoshaun-embeddings', private=True)
 
 if __name__ == '__main__':
-    pass
+    answer_question("Can I do a partial withdrawal on Great Flexi Cashback?")
