@@ -1,10 +1,4 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
 import os
-
 import PyPDF2
 import numpy as np
 import openai
@@ -15,10 +9,9 @@ from rich import print
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 import datasets
-import streamlit as st
-# Create a list to store the text files
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
+HF_TOKEN = os.environ['HF_TOKEN']
 
 
 def textify_pdf(filepath):
@@ -215,8 +208,9 @@ def chunks_to_embeddings():
         df['embeddings'] = list(tqdm(executor.map(generate_embeddings, df['chunk']), total=len(df)))
     df.to_csv('embeddings.csv')
 
+
 def answer_question(question):
-    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings", use_auth_token=st.secrets["HF_TOKEN"])
+    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings", use_auth_token=HF_TOKEN)
     df = ds['train'].to_pandas()
     df['embeddings'] = df['embeddings'].apply(eval).apply(np.array)
     ans = _answer_question(df, question=question)
