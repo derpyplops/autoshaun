@@ -14,6 +14,8 @@ from openai.embeddings_utils import distances_from_embeddings
 from rich import print
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
+import datasets
+import huggingface_hub
 
 # Create a list to store the text files
 
@@ -216,7 +218,8 @@ def chunks_to_embeddings():
 
 
 def answer_question(question):
-    df = pd.read_csv('data/embeddings2.csv', index_col=0)
+    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings")
+    df = ds['train'].to_pandas()
     df['embeddings'] = df['embeddings'].apply(eval).apply(np.array)
     ans = _answer_question(df, question=question)
     return ans
@@ -234,12 +237,10 @@ def add_n_tokens():
     df.to_csv('embeddings.csv')
 
 
+def upload_to_hf():
+    csv = pd.read_csv('data/embeddings.csv', index_col=0)
+    dataset = datasets.Dataset.from_pandas(csv)
+    dataset.push_to_hub('autoshaun-embeddings', private=True)
+
 if __name__ == '__main__':
-    questions = [
-        "What day is it?",
-        "What is the meaning of life?",
-        "What is the difference between Great Term and Great Term (Digital)?",
-        "What is the maximum entry age for Great Wealth Advantage 3?",
-        "Can I do a partial withdrawal on Great Flexi Cashback?",
-    ]
-    answer_all_questions(questions)
+    pass
