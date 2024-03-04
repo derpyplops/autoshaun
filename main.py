@@ -2,16 +2,36 @@ import os
 import PyPDF2
 import numpy as np
 import openai
-import pandas as pd
 import tiktoken
+import pandas as pd
 from openai.embeddings_utils import distances_from_embeddings
 from rich import print
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 import datasets
+from time import time
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 HF_TOKEN = os.environ['HF_TOKEN']
+
+
+def time_fn(func):
+    def wrap_func(*args, **kwargs):
+        t1 = time()
+        result = func(*args, **kwargs)
+        t2 = time()
+        print(f'Function {func.__name__!r} executed in {(t2 - t1):.4f}s')
+        return result
+
+    return wrap_func
+
+
+@time_fn
+def load_embeddings():
+    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings", use_auth_token=HF_TOKEN)
+    df = ds['train'].to_pandas()
+    df['embeddings'] = df['embeddings'].apply(eval).apply(np.array)
+    return df
 
 
 def textify_pdf(filepath):
@@ -23,16 +43,6 @@ def textify_pdf(filepath):
             text += page.extract_text()
     return text
 
-
-# # Create a dataframe from the list of texts
-# df = pd.DataFrame(texts, columns=['fname', 'text'])
-#
-# # Set the text column to be the raw text with the newlines removed
-# df['text'] = df.fname + ". " + remove_newlines(df.text)
-# df.to_csv('processed/scraped.csv')
-# df.head()
-
-# Press the green button in the gutter to run the script.
 
 max_tokens = 500
 
@@ -123,7 +133,7 @@ def chunkify_and_write():
 
 
 def create_context(
-    question, df, max_len=1800, size="ada"
+        question, df, max_len=1800, size="ada"
 ):
     """
     Create a context for a question by finding the most similar context from the dataframe
@@ -156,13 +166,13 @@ def create_context(
 
 
 def _answer_question(
-    df,
-    question="Am I allowed to publish model outputs to Twitter, without a human review?",
-    max_len=1800,
-    size="ada",
-    debug=False,
-    max_tokens=150,
-    stop_sequence=None
+        df,
+        question="Am I allowed to publish model outputs to Twitter, without a human review?",
+        max_len=1800,
+        size="ada",
+        debug=False,
+        max_tokens=150,
+        stop_sequence=None
 ):
     """
     Answer a question based on the most similar context from the dataframe texts
@@ -197,6 +207,7 @@ def _answer_question(
         print(e)
         return ""
 
+
 def generate_embeddings(chunk):
     return openai.Embedding.create(input=chunk, engine='text-embedding-ada-002')['data'][0]['embedding']
 
@@ -207,14 +218,6 @@ def chunks_to_embeddings():
     with ThreadPoolExecutor(max_workers=100) as executor:
         df['embeddings'] = list(tqdm(executor.map(generate_embeddings, df['chunk']), total=len(df)))
     df.to_csv('embeddings.csv')
-
-
-def answer_question(question):
-    ds = datasets.load_dataset("derpyplops/autoshaun-embeddings", use_auth_token=HF_TOKEN)
-    df = ds['train'].to_pandas()
-    df['embeddings'] = df['embeddings'].apply(eval).apply(np.array)
-    ans = _answer_question(df, question=question)
-    return ans
 
 
 def answer_all_questions(questions):
@@ -234,5 +237,16 @@ def upload_to_hf():
     dataset = datasets.Dataset.from_pandas(csv)
     dataset.push_to_hub('autoshaun-embeddings', private=True)
 
+
+embeddings_df = load_embeddings()
+
+
+@time_fn
+def answer_question(question):
+    ans = _answer_question(embeddings_df, question=question)
+    return ans
+
+
 if __name__ == '__main__':
-    answer_question("Can I do a partial withdrawal on Great Flexi Cashback?")
+    qn_text = "Can I do a partial withdrawal on Great Flexi Cashback?"
+    answer_question(qn_text)
