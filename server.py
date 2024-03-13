@@ -1,13 +1,16 @@
 import streamlit as st
 from answer_question import answer_question
 import time
+import base64
+
+from definitions import ASSETS_DIR
 
 
-def chat_component(chat_text, avatar_url, is_user):
+def chat_component(chat_text, avatar_path, is_user):
     alignment = 'flex-end' if is_user else 'flex-start'
     chat_html = f"""
     <div style='display: flex; justify-content: {alignment};'>
-        <img src='{avatar_url}' style='height: 50px; width: 50px; border-radius: 50%; margin-right: 10px;'>
+        <img src='data:image/png;base64,{base64.b64encode(open(avatar_path, "rb").read()).decode()}' style='height: 50px; width: 50px; border-radius: 50%; margin-right: 10px;'>
         <div style='background-color: #333333; color: #FFFFFF; border-radius: 5px; padding: 10px; margin: 5px; 
         max-width: 60%;'>
             {chat_text}
@@ -17,8 +20,8 @@ def chat_component(chat_text, avatar_url, is_user):
     st.markdown(chat_html, unsafe_allow_html=True)
 
 
-USER = "https://i.pinimg.com/originals/75/54/a6/7554a6a61d325e31d943b2a75abeaecf.jpg"
-SHAUN = "https://media.licdn.com/dms/image/C4D03AQEMosbEl8bWdA/profile-displayphoto-shrink_800_800/0/1656810215182?e=1692230400&v=beta&t=iYxkQi9av-nsIjpgamJTZrOm0Su2SqhOxuGHXtQISOs"
+USER = ASSETS_DIR / 'generic_avatar.png'
+SHAUN = ASSETS_DIR / 'shaun.png'
 
 
 class Message:
