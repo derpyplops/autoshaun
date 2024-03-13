@@ -6,6 +6,8 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 import datasets
 from pathlib import Path
+import typer
+from typing import Optional
 
 max_tokens = 500
 
@@ -80,7 +82,7 @@ def chunkify_and_write(in_dir):
     return df
 
 def generate_embeddings(chunk):
-    return openai.Embedding.create(input=chunk, engine='text-embedding-ada-002')['data'][0]['embedding']
+    return openai.Embedding.create(input=chunk, engine='text-embedding-3-small')['data'][0]['embedding']
 
 
 def add_embeddings(df):
@@ -96,16 +98,26 @@ def add_n_tokens(df):
 
 
 def upload_to_hf(df, repo_id):
-    # TODO will this work???????
     dataset = datasets.Dataset.from_pandas(df)
     dataset.push_to_hub(repo_id, private=True)
 
 
-if __name__ == "__main__":
-    in_dir = Path.cwd().parent / 'data/txts'
-    repo_id = 'autoshaun-embeddings'
+def main(
+    in_dir: Path = typer.Option(Path.cwd().parent / 'data/txts', help="Directory containing input text files"),
+    out_dir: Path = typer.Option(Path.cwd().parent / 'data/embeddings', help="Directory to save the output files"),
+    repo_id: Optional[str] = typer.Option('autoshaun-embeddings', help="Hugging Face repository ID for uploading embeddings")
+):
     chunks_df = chunkify_and_write(in_dir)
     chunks_df = add_embeddings(chunks_df)
     chunks_df = add_n_tokens(chunks_df)
-    upload_to_hf(repo_id, chunks_df)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    chunks_df.to_csv(out_dir / 'embeddings.csv', index=False)
+
+    if repo_id:
+        upload_to_hf(chunks_df, repo_id)
     print('Done')
+
+
+if __name__ == "__main__":
+    typer.run(main)
