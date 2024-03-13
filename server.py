@@ -55,15 +55,30 @@ if 'message_history' not in st.session_state:
 
 if 'chat' not in st.session_state:
     st.session_state['chat'] = Chat(USER, SHAUN)
-#
-# input here
-question = st.text_input("Your question", key="question")
-if question:
-    st.session_state.chat.add_user_message(question)
-    with st.spinner("Let me look that up for you..."):
-        ans = answer_question(question=question)
-    st.session_state.chat.add_bot_message(ans)
-    st.session_state["text"] = ""
 
-for i, message in enumerate(st.session_state.chat.messages):
-    chat_component(message.text, USER if message.is_user else SHAUN, message.is_user)
+# Create a container for the chat history
+chat_container = st.container()
+
+# Display the chat history
+with chat_container:
+    for i, message in enumerate(st.session_state.chat.messages):
+        chat_component(message.text, USER if message.is_user else SHAUN, message.is_user)
+
+# Create a container for the chat input
+input_container = st.container()
+
+# Display the chat input at the bottom
+with input_container:
+    question = st.text_input("Your question", key="question")
+    if question:
+        st.session_state.chat.add_user_message(question)
+        with st.spinner("Let me look that up for you..."):
+            ans = answer_question(question=question)
+        st.session_state.chat.add_bot_message(ans)
+        st.session_state["text"] = ""
+
+        # Scroll to the bottom of the chat history
+        chat_container.empty()
+        with chat_container:
+            for i, message in enumerate(st.session_state.chat.messages):
+                chat_component(message.text, USER if message.is_user else SHAUN, message.is_user)
