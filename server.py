@@ -1,6 +1,7 @@
 import streamlit as st
-from main import answer_question
+from answer_question import answer_question
 import time
+
 
 def chat_component(chat_text, avatar_url, is_user):
     alignment = 'flex-end' if is_user else 'flex-start'
@@ -15,8 +16,10 @@ def chat_component(chat_text, avatar_url, is_user):
     """
     st.markdown(chat_html, unsafe_allow_html=True)
 
+
 USER = "https://i.pinimg.com/originals/75/54/a6/7554a6a61d325e31d943b2a75abeaecf.jpg"
 SHAUN = "https://media.licdn.com/dms/image/C4D03AQEMosbEl8bWdA/profile-displayphoto-shrink_800_800/0/1656810215182?e=1692230400&v=beta&t=iYxkQi9av-nsIjpgamJTZrOm0Su2SqhOxuGHXtQISOs"
+
 
 class Message:
     def __init__(self, text, is_user):
@@ -26,6 +29,7 @@ class Message:
 
     def __repr__(self):
         return f"Message(text={self.text}, is_user={self.is_user}, timestamp={self.timestamp})"
+
 
 class Chat:
     def __init__(self, user_avatar_url, bot_avatar_url):
@@ -49,7 +53,6 @@ if 'message_history' not in st.session_state:
         "Hello, I'm Shaun, your friendly financial assistant. How can I help you today?"
     ]
 
-
 if 'chat' not in st.session_state:
     st.session_state['chat'] = Chat(USER, SHAUN)
 #
@@ -64,4 +67,3 @@ if question:
 
 for i, message in enumerate(st.session_state.chat.messages):
     chat_component(message.text, USER if message.is_user else SHAUN, message.is_user)
-
